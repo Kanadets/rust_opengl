@@ -27,14 +27,16 @@ fn main() {
 
     let vertex_shader_src =
         r#"
-        #version 140
+    #version 140
 
-        in vec2 position;
+    in vec2 position;
 
-        void main() {
-            gl_Position = vec4(position, 0.0, 1.0);
-        }
-    "#;
+    uniform mat4 matrix;
+
+    void main() {
+        gl_Position = matrix * vec4(position, 0.0, 1.0);
+    }
+"#;
 
     let fragment_shader_src =
         r#"
@@ -51,11 +53,8 @@ fn main() {
         ::from_source(&display, vertex_shader_src, fragment_shader_src, None)
         .unwrap();
 
+    let mut t: f32 = -0.5;
     event_loop.run(move |event, _, control_flow| {
-        let next_frame_time =
-            std::time::Instant::now() + std::time::Duration::from_nanos(16_666_667);
-        *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
-
         match event {
             glutin::event::Event::WindowEvent { event, .. } =>
                 match event {
@@ -80,17 +79,30 @@ fn main() {
             }
         }
 
+        let next_frame_time =
+            std::time::Instant::now() + std::time::Duration::from_nanos(16_666_667);
+        *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
+
+        // we update `t`
+        t += 0.0002;
+        if t > 0.5 {
+            t = -0.5;
+        }
+
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 1.0, 1.0);
-        target
-            .draw(
-                &vertex_buffer,
-                &indices,
-                &program,
-                &glium::uniforms::EmptyUniforms,
-                &Default::default()
-            )
-            .unwrap();
+
+        let uniforms =
+            uniform! {
+            matrix: [
+                [ t.cos(), t.sin(), 0.0, 0.0],
+                [-t.sin(), t.cos(), 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0f32],
+            ]
+        };
+
+        target.draw(&vertex_buffer, &indices, &program, &uniforms, &Default::default()).unwrap();
         target.finish().unwrap();
     });
 }
