@@ -84,7 +84,7 @@ fn main() {
         *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
 
         // we update `t`
-        t += 0.0002;
+        t += 0.002;
         if t > 0.5 {
             t = -0.5;
         }
